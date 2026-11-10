@@ -1,0 +1,3 @@
+[submodule "gerador-nfse-nacional-bun"]
+	path = gerador-nfse-nacional-bun
+	url = https://github.com/GabrielRozendo/gerador-nfse-nacional-bun

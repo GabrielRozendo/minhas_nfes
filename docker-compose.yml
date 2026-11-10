@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: minhas-nfes
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/nfse.db
+      CERT_PATH: /certs/certificado.pfx
+      FILES_PATH: /files
+    volumes:
+      - ./data:/data
+      - ./certs:/certs:ro
+      # XML + PDF para fileserver / backup / n8n
+      - ./files:/files
+    restart: unless-stopped
