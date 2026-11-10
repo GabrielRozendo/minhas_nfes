@@ -1,5 +1,9 @@
 import { withApiAuth, json } from "@/lib/api/http";
-import { getTemplate, updateTemplate } from "@/lib/nfse/provider";
+import {
+  deleteTemplate,
+  getTemplate,
+  updateTemplate,
+} from "@/lib/nfse/provider";
 
 export const runtime = "nodejs";
 
@@ -26,5 +30,15 @@ export async function PATCH(request: Request, ctx: Ctx) {
     const tpl = updateTemplate(id, body);
     if (!tpl) return json({ error: "Template não encontrado" }, 404);
     return json(tpl);
+  });
+}
+
+export async function DELETE(request: Request, ctx: Ctx) {
+  return withApiAuth(request, async () => {
+    const { id } = await ctx.params;
+    if (!deleteTemplate(id)) {
+      return json({ error: "Template não encontrado" }, 404);
+    }
+    return json({ ok: true });
   });
 }

@@ -9,7 +9,7 @@ function isPublic(pathname: string) {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const authEnabled =
     process.env.AUTH_ENABLED === "true" || process.env.AUTH_ENABLED === "1";
   if (!authEnabled) return NextResponse.next();

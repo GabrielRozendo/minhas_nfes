@@ -617,6 +617,13 @@ export function updateTemplate(
   return getTemplate(id);
 }
 
+export function deleteTemplate(id: string) {
+  const existing = getTemplate(id);
+  if (!existing) return false;
+  getDb().delete(templates).where(eq(templates.id, id)).run();
+  return true;
+}
+
 export function getSystemStatus() {
   const env = getEnv();
   return {

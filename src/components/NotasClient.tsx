@@ -13,6 +13,7 @@ type Nota = {
   status: string;
   source: string;
   createdAt: string;
+  hasPdf?: boolean;
 };
 
 export function NotasClient({
@@ -51,7 +52,7 @@ export function NotasClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha no sync");
       setMessage(
-        `Sync ok: ${data.synced} novas. Próximo permitido: ${data.nextAllowedAt ?? "agora"}`,
+        `Sync ok: ${data.synced} novas. Próximo: ${data.nextAllowedAt ?? "agora"}`,
       );
       router.refresh();
     } catch (err) {
@@ -62,12 +63,14 @@ export function NotasClient({
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-semibold">Notas</h2>
-          <p className="mt-1 text-[var(--muted)]">
-            Histórico local + sync ADN sob demanda (cooldown de 1h).
+    <div className="reveal">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="max-w-xl">
+          <p className="eyebrow">Histórico</p>
+          <h2 className="display-title">Notas</h2>
+          <p className="lead">
+            Local + ADN sob demanda. Sem polling — cooldown de 1h quando não há
+            documentos novos.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -82,16 +85,16 @@ export function NotasClient({
             title={
               adn.canSyncNow
                 ? "Sincronizar ADN"
-                : `Cooldownoldown até ${adn.nextAllowedAt}`
+                : `Cooldownoldownown até ${adn.nextAllowedAt}`
             }
           >
             {syncing ? "Sincronizando…" : "Sync ADN"}
           </button>
         </div>
-      </div>
+      </header>
 
       <p className="mt-3 text-sm text-[var(--muted)]">
-        Último NSU: <code>{adn.ultimoNsu}</code>
+        Último NSU: <code className="font-mono">{adn.ultimoNsu}</code>
         {!adn.canSyncNow && adn.nextAllowedAt
           ? ` · cooldown até ${adn.nextAllowedAt}`
           : null}
@@ -100,7 +103,7 @@ export function NotasClient({
       {message ? <div className="alert">{message}</div> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
 
-      <div className="field mt-6">
+      <div className="field mt-6 max-w-md">
         <label className="label" htmlFor="q">
           Buscar
         </label>
@@ -113,7 +116,7 @@ export function NotasClient({
         />
       </div>
 
-      <div className="panel overflow-x-auto">
+      <div className="surface mt-4 overflow-x-auto">
         <table className="table">
           <thead>
             <tr>
@@ -129,7 +132,7 @@ export function NotasClient({
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="muted">
-                  Nenhuma nota ainda.
+                  Nenhuma nota ainda. Crie um template e emita a primeira.
                 </td>
               </tr>
             ) : (
@@ -157,14 +160,27 @@ export function NotasClient({
                       "—"
                     )}
                   </td>
-                  <td>
+                  <td className="whitespace-nowrap">
                     {n.chaveAcesso ? (
-                      <Link
-                        className="text-sm underline"
-                        href={`/emitir?duplicar=${n.chaveAcesso}`}
-                      >
-                        Duplicar
-                      </Link>
+                      <>
+                        <Link
+                          className="text-sm underline underline-offset-2"
+                          href={`/emitir?duplicar=${n.chaveAcesso}`}
+                        >
+                          Duplicar
+                        </Link>
+                        {n.hasPdf ? (
+                          <>
+                            {" · "}
+                            <a
+                              className="text-sm underline underline-offset-2"
+                              href={`/api/v1/notas/${n.chaveAcesso}/pdf`}
+                            >
+                              PDF
+                            </a>
+                          </>
+                        ) : null}
+                      </>
                     ) : null}
                   </td>
                 </tr>

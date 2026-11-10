@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Notas" },
@@ -8,25 +11,39 @@ const links = [
 ];
 
 export function Nav() {
+  const pathname = usePathname();
+
   return (
-    <header className="border-b border-[var(--line)] bg-[color-mix(in_oklab,white_55%,transparent)] backdrop-blur-sm">
+    <header className="relative z-10 border-b border-[var(--line)] bg-[color-mix(in_oklab,white_58%,transparent)] backdrop-blur-md">
       <div className="container flex flex-wrap items-end justify-between gap-4 py-5">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
-            Portal interno
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Minhas NFS-e</h1>
+          <p className="eyebrow">Uso pessoal · vibe coded</p>
+          <Link href="/" className="block">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Minhas NFS-e
+            </h1>
+          </Link>
         </div>
-        <nav className="flex flex-wrap gap-4 text-sm">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="border-b border-transparent pb-0.5 hover:border-[var(--ink)]"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="flex flex-wrap gap-5 text-sm">
+          {links.map((link) => {
+            const active =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`pb-0.5 border-b transition-colors ${
+                  active
+                    ? "border-[var(--ink)]"
+                    : "border-transparent text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--line)]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>

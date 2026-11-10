@@ -6,10 +6,16 @@ export const dynamic = "force-dynamic";
 export default async function EmitirPage({
   searchParams,
 }: {
-  searchParams: Promise<{ duplicar?: string }>;
+  searchParams: Promise<{ duplicar?: string; template?: string }>;
 }) {
   const sp = await searchParams;
   const templates = listTemplates();
   const draft = sp.duplicar ? duplicateNotaDraft(sp.duplicar) : null;
-  return <EmitirClient templates={templates} draft={draft} />;
+  return (
+    <EmitirClient
+      templates={templates}
+      draft={draft}
+      initialTemplateId={sp.template}
+    />
+  );
 }
