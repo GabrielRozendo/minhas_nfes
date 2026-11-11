@@ -7,7 +7,7 @@ export default async function StatusPage() {
 
   return (
     <div>
-      <h2 className="text-3xl font-semibold">Status</h2>
+      <h2 className="display-title">Status</h2>
       <p className="mt-1 text-[var(--muted)]">
         Ambiente, certificado e salvaguardas da API gov.br.
       </p>

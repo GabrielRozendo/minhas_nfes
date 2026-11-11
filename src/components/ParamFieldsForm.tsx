@@ -26,7 +26,7 @@ export function ParamFieldsInputs({
               </label>
               <textarea
                 id={id}
-                className="textarea min-h-28 font-[family-name:var(--font-display)] text-base"
+                className="textarea min-h-32"
                 value={String(value)}
                 required={field.required}
                 onChange={(e) => onChange(field.key, e.target.value)}

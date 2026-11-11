@@ -214,7 +214,7 @@ export function TemplatesClient({
           ← Voltar aos templates
         </button>
 
-        <header className="mt-4 max-w-2xl">
+        <header className="mt-4">
           <p className="eyebrow">Templates</p>
           <h2 className="display-title">
             {mode === "edit" ? "Editar template" : "Novo template"}
@@ -226,7 +226,7 @@ export function TemplatesClient({
           </p>
         </header>
 
-        <form onSubmit={onSubmit} className="mt-8 max-w-2xl space-y-8">
+        <form onSubmit={onSubmit} className="form-stack">
           <DpsFixedFieldsForm
             form={form}
             onChange={patchForm}

@@ -207,7 +207,7 @@ export function DpsFixedFieldsForm({
             </label>
             <textarea
               id="discPadrao"
-              className="textarea min-h-24 font-[family-name:var(--font-display)] text-base"
+              className="textarea min-h-28"
               value={form.discriminacaoPadrao}
               onChange={(e) =>
                 onChange({ discriminacaoPadrao: e.target.value })

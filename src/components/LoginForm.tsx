@@ -35,7 +35,7 @@ export function LoginForm() {
 
   return (
     <div className="mx-auto max-w-md pt-16">
-      <h2 className="text-3xl font-semibold">Entrar</h2>
+      <h2 className="display-title">Entrar</h2>
       <p className="mt-2 text-[var(--muted)]">
         Login opcional controlado por <code>AUTH_ENABLED</code> no ambiente.
       </p>

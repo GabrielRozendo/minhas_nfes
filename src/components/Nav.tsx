@@ -18,7 +18,7 @@ export function Nav() {
       <div className="container flex flex-wrap items-end justify-between gap-4 py-5">
         <div>
           <Link href="/" className="block">
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="font-serif text-2xl font-semibold tracking-tight">
               Minhas NFS-e
             </h1>
           </Link>

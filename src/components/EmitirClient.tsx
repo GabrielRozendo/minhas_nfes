@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DpsFixedFieldsForm } from "@/components/DpsFixedFieldsForm";
+import { EmissaoResult } from "@/components/EmissaoResult";
 import { ParamFieldsInputs } from "@/components/ParamFieldsForm";
 import {
   DEFAULT_PARAM_FIELDS,
@@ -124,12 +125,18 @@ export function EmitirClient({
   const [dryRun, setDryRun] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loadingFixed, setLoadingFixed] = useState(false);
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState("");
+  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setValues(initialValues(fields, draft?.suggestedParams));
   }, [templateId, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!result) return;
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
 
   async function loadTemplateFixed(id: string) {
     setLoadingFixed(true);
@@ -161,7 +168,7 @@ export function EmitirClient({
     e.preventDefault();
     setLoading(true);
     setError("");
-    setResult("");
+      setResult(null);
     try {
       if (mode === "template" && !templateId) {
         throw new Error("Selecione um template ou mude para nota avulsa");
@@ -203,7 +210,7 @@ export function EmitirClient({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha na emissão");
-      setResult(JSON.stringify(data, null, 2));
+      setResult(data);
       if (!dryRun) {
         setIdempotencyKey(
           `ui-${new Date().toISOString().slice(0, 10)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -219,7 +226,7 @@ export function EmitirClient({
 
   return (
     <div className="reveal">
-      <header className="max-w-2xl">
+      <header>
         <p className="eyebrow">Emissão</p>
         <h2 className="display-title">Emitir NFS-e</h2>
         <p className="lead">
@@ -234,11 +241,13 @@ export function EmitirClient({
         </div>
       ) : null}
 
-      <form onSubmit={onSubmit} className="mt-8 max-w-2xl space-y-6">
+      <form onSubmit={onSubmit} className="form-stack">
         <section className="surface">
           <h3 className="section-title">Modo</h3>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2">
+          <div className="segment" role="radiogroup" aria-label="Modo de emissão">
+            <label
+              className={`segment-item${mode === "template" ? " is-on" : ""}`}
+            >
               <input
                 type="radio"
                 name="modo"
@@ -253,7 +262,9 @@ export function EmitirClient({
               />
               A partir de template
             </label>
-            <label className="flex items-center gap-2">
+            <label
+              className={`segment-item${mode === "avulsa" ? " is-on" : ""}`}
+            >
               <input
                 type="radio"
                 name="modo"
@@ -389,29 +400,43 @@ export function EmitirClient({
                   para não emitir em dobro.
                 </p>
               </div>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="choice-card">
                 <input
                   type="checkbox"
                   checked={dryRun}
                   onChange={(e) => setDryRun(e.target.checked)}
                 />
-                Dry-run (valida localmente, não chama a SEFIN)
+                <span>
+                  <strong>Validar sem emitir</strong>
+                  <span className="hint">
+                    {dryRun
+                      ? "Confere a nota neste computador. A SEFIN não é chamada e o número do DPS não é consumido."
+                      : "Desmarcado: o envio segue para a SEFIN e emite a nota de verdade."}
+                  </span>
+                </span>
               </label>
             </section>
 
             {error ? <div className="alert alert-error">{error}</div> : null}
 
-            <button className="btn" type="submit" disabled={loading}>
-              {loading ? "Processando…" : dryRun ? "Validar" : "Emitir nota"}
-            </button>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <button className="btn" type="submit" disabled={loading}>
+                {loading ? "Processando…" : dryRun ? "Validar nota" : "Emitir nota"}
+              </button>
+              <p className="m-0 text-sm text-[var(--muted)]">
+                {dryRun
+                  ? "O retorno mostra a leitura da nota e o JSON original."
+                  : "Isso envia a DPS para a SEFIN."}
+              </p>
+            </div>
           </>
         )}
       </form>
 
       {result ? (
-        <pre className="surface mt-6 overflow-x-auto whitespace-pre-wrap font-mono text-xs">
-          {result}
-        </pre>
+        <div ref={resultRef} className="mt-8 scroll-mt-6">
+          <EmissaoResult data={result} />
+        </div>
       ) : null}
     </div>
   );

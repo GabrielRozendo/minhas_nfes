@@ -19,7 +19,7 @@ export default async function NotaDetailPage({
       <p className="text-sm text-[var(--muted)]">
         <Link href="/">← Notas</Link>
       </p>
-      <h2 className="mt-2 text-3xl font-semibold">Nota</h2>
+      <h2 className="display-title mt-2">Nota</h2>
       <p className="mt-1 font-mono text-sm break-all">{nota.chaveAcesso}</p>
 
       <dl className="panel grid gap-3 sm:grid-cols-2">

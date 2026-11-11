@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
 
 const display = Fraunces({
   variable: "--font-display",
+  subsets: ["latin"],
+});
+
+const ui = Instrument_Sans({
+  variable: "--font-ui",
   subsets: ["latin"],
 });
 
@@ -24,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
-      className={`${display.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${ui.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Nav />
