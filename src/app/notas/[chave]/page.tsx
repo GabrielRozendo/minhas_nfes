@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SalvarComoTemplateButton } from "@/components/SalvarComoTemplateButton";
 import { getNotaByChave } from "@/lib/nfse/provider";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,7 @@ export default async function NotaDetailPage({
         <Link className="btn btn-secondary" href={`/emitir?duplicar=${chave}`}>
           Duplicar
         </Link>
+        <SalvarComoTemplateButton chave={chave} />
         <a className="btn" href={`/api/v1/notas/${chave}/pdf`}>
           Baixar PDF
         </a>

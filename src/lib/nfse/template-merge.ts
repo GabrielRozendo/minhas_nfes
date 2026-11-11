@@ -9,7 +9,7 @@ import { getEnv } from "@/lib/config/env";
 
 export type EmitParams = Record<string, unknown>;
 
-function deepMerge(
+export function deepMerge(
   base: Record<string, unknown>,
   patch: Record<string, unknown>,
 ): Record<string, unknown> {

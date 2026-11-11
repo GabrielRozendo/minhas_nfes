@@ -26,10 +26,20 @@ import {
 import { safeErrorMessage } from "./safe-log";
 import {
   buildDpsFromTemplate,
+  deepMerge,
   extractNotaMeta,
   type EmitParams,
 } from "./template-merge";
+import {
+  fixedPayloadFromNotaSources,
+  parseDpsXmlToDpsData,
+  toFixedPayload,
+} from "./dps-from-xml";
 import { ensureNotaArtifacts } from "./pdf";
+import {
+  DEFAULT_PARAM_FIELDS,
+  normalizeParamSchema,
+} from "@/lib/templates/types";
 
 function service() {
   const env = getEnv();
@@ -176,8 +186,18 @@ export function duplicateNotaDraft(chave: string) {
   if (!local) return null;
 
   const payload = local.payloadEnviado
-    ? JSON.parse(local.payloadEnviado)
+    ? (JSON.parse(local.payloadEnviado) as Record<string, unknown>)
     : null;
+
+  let suggestedFixedPayload: Record<string, unknown> | null = null;
+  try {
+    suggestedFixedPayload = fixedPayloadFromNotaSources({
+      payloadEnviado: payload,
+      xmlNfse: local.xmlNfse,
+    });
+  } catch {
+    suggestedFixedPayload = null;
+  }
 
   return {
     fromChave: chave,
@@ -190,6 +210,7 @@ export function duplicateNotaDraft(chave: string) {
     },
     templateId: local.templateId,
     payloadEnviado: payload,
+    suggestedFixedPayload,
   };
 }
 
@@ -333,6 +354,30 @@ async function emitPreparedDps(options: {
   }
 }
 
+function assertFixedPayloadUsable(fixed: Record<string, unknown>) {
+  const inf =
+    (fixed.infDps as Record<string, unknown> | undefined) ?? fixed;
+  const servico = inf.servico as Record<string, unknown> | undefined;
+  const prestador = inf.prestador as Record<string, unknown> | undefined;
+  const regime = prestador?.regimeTributario as
+    | Record<string, unknown>
+    | undefined;
+  if (!servico || typeof servico !== "object") {
+    const err = new Error(
+      "Informe um template ou fixedPayload com infDps.servico",
+    );
+    (err as Error & { status: number }).status = 400;
+    throw err;
+  }
+  if (!regime || typeof regime !== "object") {
+    const err = new Error(
+      "Informe prestador.regimeTributario no template ou fixedPayload",
+    );
+    (err as Error & { status: number }).status = 400;
+    throw err;
+  }
+}
+
 export async function emitNota(input: {
   idempotencyKey: string;
   templateId?: string;
@@ -341,7 +386,7 @@ export async function emitNota(input: {
   dryRun?: boolean;
 }) {
   const db = getDb();
-  let fixed = input.fixedPayload ?? {};
+  let fixed: Record<string, unknown> = {};
   let templateId = input.templateId ?? null;
 
   if (input.templateId) {
@@ -355,9 +400,25 @@ export async function emitNota(input: {
       (err as Error & { status: number }).status = 404;
       throw err;
     }
-    fixed = JSON.parse(tpl.fixedPayload);
+    fixed = JSON.parse(tpl.fixedPayload) as Record<string, unknown>;
     templateId = tpl.id;
   }
+
+  if (input.fixedPayload && typeof input.fixedPayload === "object") {
+    fixed = input.templateId
+      ? deepMerge(fixed, input.fixedPayload)
+      : input.fixedPayload;
+  }
+
+  if (!input.templateId && !input.fixedPayload) {
+    const err = new Error(
+      "Informe templateId ou fixedPayload para emitir",
+    );
+    (err as Error & { status: number }).status = 400;
+    throw err;
+  }
+
+  assertFixedPayloadUsable(fixed);
 
   if (input.dryRun) {
     const peeked = peekNextDpsNumber();
@@ -579,6 +640,10 @@ export function createTemplate(input: {
   paramSchema?: Record<string, unknown>;
 }) {
   const id = randomUUID();
+  const paramSchema =
+    input.paramSchema && Object.keys(input.paramSchema).length > 0
+      ? input.paramSchema
+      : { fields: DEFAULT_PARAM_FIELDS.map((f) => ({ ...f })) };
   getDb()
     .insert(templates)
     .values({
@@ -586,10 +651,95 @@ export function createTemplate(input: {
       name: input.name,
       description: input.description ?? "",
       fixedPayload: JSON.stringify(input.fixedPayload),
-      paramSchema: JSON.stringify(input.paramSchema ?? {}),
+      paramSchema: JSON.stringify(normalizeParamSchema(paramSchema)),
     })
     .run();
   return getTemplate(id);
+}
+
+export function createTemplateFromNota(
+  chave: string,
+  input?: { name?: string; description?: string },
+) {
+  const db = getDb();
+  const local = db
+    .select()
+    .from(notas)
+    .where(eq(notas.chaveAcesso, chave))
+    .get();
+  if (!local) {
+    const err = new Error("Nota não encontrada");
+    (err as Error & { status: number }).status = 404;
+    throw err;
+  }
+
+  const payload = local.payloadEnviado
+    ? (JSON.parse(local.payloadEnviado) as Record<string, unknown>)
+    : null;
+  const fixedPayload = fixedPayloadFromNotaSources({
+    payloadEnviado: payload,
+    xmlNfse: local.xmlNfse,
+  });
+
+  const defaultName =
+    input?.name?.trim() ||
+    (local.tomadorNome
+      ? `Template — ${local.tomadorNome}`
+      : `Template — ${chave.slice(0, 12)}`);
+
+  const disc =
+    local.discriminacao ||
+    (
+      (
+        (fixedPayload.infDps as Record<string, unknown> | undefined)
+          ?.servico as Record<string, unknown> | undefined
+      )?.xDescServ as string | undefined
+    );
+
+  const paramFields = DEFAULT_PARAM_FIELDS.map((f) => {
+    if (f.key === "discriminacao" && disc) {
+      return { ...f, defaultValue: disc };
+    }
+    if (f.key === "valor" && local.valor != null) {
+      return { ...f, defaultValue: local.valor };
+    }
+    return { ...f };
+  });
+
+  return createTemplate({
+    name: defaultName,
+    description:
+      input?.description?.trim() ||
+      `Criado a partir da nota ${chave}`,
+    fixedPayload,
+    paramSchema: { fields: paramFields },
+  });
+}
+
+/** Cria template a partir de XML de NFS-e (seed / import). */
+export function createTemplateFromXml(
+  xml: string,
+  input: { name: string; description?: string },
+) {
+  const fixedPayload = toFixedPayload(parseDpsXmlToDpsData(xml));
+
+  const inf = fixedPayload.infDps as Record<string, unknown> | undefined;
+  const servico = inf?.servico as Record<string, unknown> | undefined;
+  const disc = servico?.xDescServ as string | undefined;
+
+  const paramFields = DEFAULT_PARAM_FIELDS.map((f) => {
+    if (f.key === "discriminacao" && disc) {
+      return { ...f, defaultValue: disc };
+    }
+    return { ...f };
+  });
+
+  return createTemplate({
+    name: input.name,
+    description: input.description,
+    fixedPayload,
+    paramSchema: { fields: paramFields },
+  });
 }
 
 export function updateTemplate(

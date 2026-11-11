@@ -6,9 +6,10 @@ Portal (dashboard + API) para **Create/Read** de NFS-e no **Emissor Nacional** (
 
 ## Para que serve
 
-- Emitir nota pelo portal ou pela API
+- Emitir nota pelo portal ou pela API — **com template** ou **avulsa**
 - Guardar histórico local + sync ADN (com cooldown)
-- Templates por cliente (mesmo CNPJ) com campos amigáveis: **valor**, **competência**, **descrição**
+- Templates por cliente/serviço com payload completo (tomador, endereço, códigos municipal/NBS, tributação, IBS/CBS) e params amigáveis: **valor**, **competência**, **descrição**
+- Criar template a partir de uma nota já emitida (`Salvar como template`)
 - Agendar no n8n: `POST /templates/{id}/emit` com esses params
 - Baixar PDF (DANFSe local; tenta oficial se habilitado)
 
@@ -45,13 +46,23 @@ docker compose up -d --build
 
 Volumes: `./data` (SQLite), `./certs` (A1), `./files` (xml/pdf).
 
-## Templates (CRUD)
+## Emissão
 
-No dashboard (**Templates**): criar / editar / excluir com formulário — sem JSON na cara.
+### Com template (recorrente)
 
-1. Cadastre o **tomador** (CNPJ fixo) e o **serviço**
+1. Cadastre tomador, serviço, tributação e IBS/CBS no **Templates**
 2. Defina parâmetros variáveis (padrão: data, valor, descrição)
-3. Emita no painel ou no n8n só passando os params
+3. Em **Emitir**, escolha o template e preencha só os params — ou edite campos fixos só nesta emissão
+4. No n8n, chame `POST /templates/{id}/emit`
+
+### Nota avulsa
+
+Em **Emitir** → modo **Nota avulsa**: preenche o formulário completo + params, sem precisar de template. A API equivale a `POST /notas` com `fixedPayload` + `params` (sem `templateId`).
+
+### A partir de uma nota existente
+
+- **Duplicar** → abre Emitir pré-preenchido com o payload da nota
+- **Salvar como template** → cria template reutilizável (`POST /api/v1/notas/{chave}/template`)
 
 ### n8n (mensal)
 
@@ -72,12 +83,20 @@ Content-Type: application/json
 
 PDF depois: `GET /api/v1/notas/{chave}/pdf`
 
+## Templates (CRUD)
+
+No dashboard (**Templates**): criar / editar / excluir com formulário — sem JSON na cara.
+
+O `fixed_payload` guarda o que se repete (tomador + endereço, `cServTribNac` / `cServMun` / `cNBSPrinc`, local de prestação, ISSQN **sem** alíquota se não informada, PIS/COFINS, % SN, IBS/CBS, regime do prestador). Alíquota ISS é opcional.
+
 ## API rápida
 
 | Método | Rota | Uso |
 |---|---|---|
-| GET/POST | `/api/v1/notas` | listar / emitir |
+| GET/POST | `/api/v1/notas` | listar / emitir (`templateId` e/ou `fixedPayload`) |
 | GET | `/api/v1/notas/{chave}/pdf` | PDF |
+| POST | `/api/v1/notas/{chave}/duplicar` | rascunho a partir da nota |
+| POST | `/api/v1/notas/{chave}/template` | criar template a partir da nota |
 | GET/POST/PATCH/DELETE | `/api/v1/templates`… | CRUD templates |
 | POST | `/api/v1/templates/{id}/emit` | emitir por template |
 | POST | `/api/v1/adn/sync` | sync ADN (cooldown 1h) |

@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { DpsFixedFieldsForm } from "@/components/DpsFixedFieldsForm";
 import {
   DEFAULT_PARAM_FIELDS,
   buildFixedPayloadFromForm,
@@ -219,141 +220,19 @@ export function TemplatesClient({
             {mode === "edit" ? "Editar template" : "Novo template"}
           </h2>
           <p className="lead">
-            Cadastre o cliente (tomador) e o serviço fixos. Na emissão — dashboard
+            Cadastre tomador, serviço e tributação fixos. Na emissão — dashboard
             ou n8n — você só preenche os parâmetros variáveis (valor, data,
             descrição…).
           </p>
         </header>
 
         <form onSubmit={onSubmit} className="mt-8 max-w-2xl space-y-8">
-          <section className="surface">
-            <h3 className="section-title">Identificação</h3>
-            <div className="field">
-              <label className="label" htmlFor="name">
-                Nome *
-              </label>
-              <input
-                id="name"
-                className="input"
-                value={form.name}
-                onChange={(e) => patchForm({ name: e.target.value })}
-                placeholder="Ex.: Mensalidade Cliente X"
-                required
-              />
-            </div>
-            <div className="field">
-              <label className="label" htmlFor="description">
-                Descrição interna
-              </label>
-              <input
-                id="description"
-                className="input"
-                value={form.description}
-                onChange={(e) => patchForm({ description: e.target.value })}
-                placeholder="Opcional — só para você se organizar"
-              />
-            </div>
-          </section>
-
-          <section className="surface">
-            <h3 className="section-title">Tomador (fixo)</h3>
-            <p className="mb-4 text-sm text-[var(--muted)]">
-              Ideal para o mesmo CNPJ todo mês. O n8n só manda os parâmetros
-              variáveis.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="field sm:col-span-2">
-                <label className="label" htmlFor="tomadorNome">
-                  Razão social / nome *
-                </label>
-                <input
-                  id="tomadorNome"
-                  className="input"
-                  value={form.tomadorNome}
-                  onChange={(e) => patchForm({ tomadorNome: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="field sm:col-span-2">
-                <label className="label" htmlFor="tomadorDoc">
-                  CPF ou CNPJ *
-                </label>
-                <input
-                  id="tomadorDoc"
-                  className="input font-mono"
-                  value={form.tomadorDoc}
-                  onChange={(e) => patchForm({ tomadorDoc: e.target.value })}
-                  placeholder="Somente números"
-                  required
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="surface">
-            <h3 className="section-title">Serviço (fixo)</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="field">
-                <label className="label" htmlFor="codigoServico">
-                  Código serviço nacional *
-                </label>
-                <input
-                  id="codigoServico"
-                  className="input font-mono"
-                  value={form.codigoServico}
-                  onChange={(e) => patchForm({ codigoServico: e.target.value })}
-                  placeholder="Ex.: 010701188"
-                  required
-                />
-              </div>
-              <div className="field">
-                <label className="label" htmlFor="codigoMunicipio">
-                  Município IBGE
-                </label>
-                <input
-                  id="codigoMunicipio"
-                  className="input font-mono"
-                  value={form.codigoMunicipio}
-                  onChange={(e) =>
-                    patchForm({ codigoMunicipio: e.target.value })
-                  }
-                  placeholder={defaultMunicipio}
-                />
-              </div>
-              <div className="field">
-                <label className="label" htmlFor="aliquota">
-                  Alíquota ISS (decimal)
-                </label>
-                <input
-                  id="aliquota"
-                  className="input"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  max="1"
-                  value={form.aliquota}
-                  onChange={(e) =>
-                    patchForm({ aliquota: Number(e.target.value) })
-                  }
-                />
-                <p className="hint">Ex.: 0.02 = 2%</p>
-              </div>
-              <div className="field sm:col-span-2">
-                <label className="label" htmlFor="discPadrao">
-                  Descrição padrão do serviço
-                </label>
-                <textarea
-                  id="discPadrao"
-                  className="textarea min-h-24 font-[family-name:var(--font-display)] text-base"
-                  value={form.discriminacaoPadrao}
-                  onChange={(e) =>
-                    patchForm({ discriminacaoPadrao: e.target.value })
-                  }
-                  placeholder="Usada se o parâmetro de descrição não for enviado"
-                />
-              </div>
-            </div>
-          </section>
+          <DpsFixedFieldsForm
+            form={form}
+            onChange={patchForm}
+            showMeta
+            defaultMunicipio={defaultMunicipio}
+          />
 
           <section className="surface">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -490,7 +369,8 @@ export function TemplatesClient({
           <h2 className="display-title">Templates</h2>
           <p className="lead">
             Um template por cliente/serviço. Depois é só passar valor,
-            competência e descrição — no painel ou no n8n.
+            competência e descrição — no painel ou no n8n. Também dá para emitir
+            nota avulsa sem template.
           </p>
         </div>
         <button type="button" className="btn" onClick={openCreate}>
@@ -505,11 +385,17 @@ export function TemplatesClient({
           <div className="surface empty-state">
             <p className="text-lg">Nenhum template ainda.</p>
             <p className="mt-1 text-[var(--muted)]">
-              Crie o primeiro para o CNPJ que você fatura com frequência.
+              Crie o primeiro para o CNPJ que você fatura com frequência, ou
+              emita uma nota avulsa.
             </p>
-            <button type="button" className="btn mt-4" onClick={openCreate}>
-              Criar template
-            </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" className="btn" onClick={openCreate}>
+                Criar template
+              </button>
+              <Link className="btn btn-secondary" href="/emitir?modo=avulsa">
+                Emitir avulsa
+              </Link>
+            </div>
           </div>
         ) : (
           initialItems.map((t, i) => {
@@ -539,7 +425,10 @@ export function TemplatesClient({
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Link className="btn btn-secondary" href={`/emitir?template=${t.id}`}>
+                  <Link
+                    className="btn btn-secondary"
+                    href={`/emitir?template=${t.id}`}
+                  >
                     Emitir
                   </Link>
                   <button

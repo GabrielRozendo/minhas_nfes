@@ -4,6 +4,45 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function SaveTemplateLink({ chave }: { chave: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function onClick() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/v1/notas/${encodeURIComponent(chave)}/template`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha ao criar template");
+      router.push("/templates");
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className="text-sm underline underline-offset-2"
+      disabled={loading}
+      onClick={onClick}
+    >
+      {loading ? "Salvando…" : "Template"}
+    </button>
+  );
+}
+
 type Nota = {
   id: string;
   chaveAcesso: string | null;
@@ -132,7 +171,7 @@ export function NotasClient({
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="muted">
-                  Nenhuma nota ainda. Crie um template e emita a primeira.
+                  Nenhuma nota ainda. Emita avulsa ou a partir de um template.
                 </td>
               </tr>
             ) : (
@@ -169,6 +208,8 @@ export function NotasClient({
                         >
                           Duplicar
                         </Link>
+                        {" · "}
+                        <SaveTemplateLink chave={n.chaveAcesso} />
                         {n.hasPdf ? (
                           <>
                             {" · "}
