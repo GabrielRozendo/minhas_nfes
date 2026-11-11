@@ -17,7 +17,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Minhas NFS-e",
   description:
-    "Ferramenta pessoal (vibe coded) para emitir NFS-e Nacional com templates e n8n",
+    "Ferramenta pessoal (vibe coded) para emitir NFS-e Nacional com templates e api (podem ser usadas via n8n)",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

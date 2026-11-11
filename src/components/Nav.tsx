@@ -17,7 +17,6 @@ export function Nav() {
     <header className="relative z-10 border-b border-[var(--line)] bg-[color-mix(in_oklab,white_58%,transparent)] backdrop-blur-md">
       <div className="container flex flex-wrap items-end justify-between gap-4 py-5">
         <div>
-          <p className="eyebrow">Uso pessoal · vibe coded</p>
           <Link href="/" className="block">
             <h1 className="text-2xl font-semibold tracking-tight">
               Minhas NFS-e
